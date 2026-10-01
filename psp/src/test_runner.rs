@@ -8,6 +8,7 @@ pub const STARTING_TOKEN: &str = "STARTING_TESTS";
 pub const SUCCESS_TOKEN: &str = "FINAL_SUCCESS";
 pub const FAILURE_TOKEN: &str = "FINAL_FAILURE";
 
+use alloc::ffi::CString;
 use alloc::format;
 use alloc::vec::Vec;
 use core::fmt::Arguments;
@@ -194,9 +195,10 @@ impl<'a> TestRunner<'a> {
 }
 
 fn get_test_output_pipe() -> SceUid {
+    let path = psp_filename(OUTPUT_FIFO);
     unsafe {
         let fd = sys::sceIoOpen(
-            psp_filename(OUTPUT_FIFO),
+            path.as_ptr().cast(),
             sys::IoOpenFlags::APPEND | sys::IoOpenFlags::WR_ONLY,
             0o777,
         );
@@ -212,9 +214,10 @@ fn get_test_output_pipe() -> SceUid {
 }
 
 fn get_test_output_file() -> SceUid {
+    let path = psp_filename(OUTPUT_FILENAME);
     unsafe {
         let fd = sys::sceIoOpen(
-            psp_filename(OUTPUT_FILENAME),
+            path.as_ptr().cast(),
             sys::IoOpenFlags::TRUNC | sys::IoOpenFlags::CREAT | sys::IoOpenFlags::RD_WR,
             0o777,
         );
@@ -225,8 +228,8 @@ fn get_test_output_file() -> SceUid {
     }
 }
 
-fn psp_filename(filename: &str) -> *const u8 {
-    format!("host0:/{}\0", filename).as_bytes().as_ptr()
+fn psp_filename(filename: &str) -> CString {
+    CString::new(format!("host0:/{}", filename)).unwrap()
 }
 
 fn write_to_psp_output_fd(fd: SceUid, msg: &str) {
