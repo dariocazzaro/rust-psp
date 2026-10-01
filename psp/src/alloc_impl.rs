@@ -11,9 +11,8 @@ unsafe impl GlobalAlloc for SystemAlloc {
             // We need to store the memory block ID.
             + mem::size_of::<SceUid>()
 
-            // We also store padding bytes, in case the block returned from the
-            // system is not aligned. The count of padding bytes is also stored
-            // here, in the last byte.
+            // We also need room for padding, in case the block returned from
+            // the system is not aligned.
             + layout.align();
 
         let id = sys::sceKernelAllocPartitionMemory(
@@ -28,22 +27,21 @@ unsafe impl GlobalAlloc for SystemAlloc {
             return ptr::null_mut();
         }
 
-        let mut ptr: *mut u8 = sys::sceKernelGetBlockHeadAddr(id).cast();
-        *ptr.cast() = id;
+        // Return the first aligned address that leaves room for the block ID
+        // just before it. The padding is less than `layout.align()`, so the
+        // block always fits in `size`.
+        let ptr: *mut u8 = sys::sceKernelGetBlockHeadAddr(id).cast();
+        let ptr = ptr.add(mem::size_of::<SceUid>());
+        let ptr = ptr.add((ptr as usize).wrapping_neg() & (layout.align() - 1));
 
-        ptr = ptr.add(mem::size_of::<SceUid>());
-
-        // We must add at least one, to store this value.
-        let align_padding = 1 + ptr.add(1).align_offset(layout.align());
-        *ptr.add(align_padding - 1) = align_padding as u8;
-        ptr.add(align_padding)
+        // The ID may be unaligned when `layout.align()` is less than its size.
+        ptr.cast::<SceUid>().sub(1).write_unaligned(id);
+        ptr
     }
 
     #[inline(never)]
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        let align_padding = *ptr.sub(1);
-
-        let id = *ptr.sub(align_padding as usize).cast::<SceUid>().offset(-1);
+        let id = ptr.cast::<SceUid>().sub(1).read_unaligned();
 
         sys::sceKernelFreePartitionMemory(id);
     }

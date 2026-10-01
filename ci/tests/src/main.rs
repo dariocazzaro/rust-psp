@@ -7,6 +7,7 @@ extern crate alloc;
 
 use psp::test_runner::TestRunner;
 
+mod alloc_test;
 mod bmp_screenshot_test;
 mod gum_test;
 mod math_test;
@@ -17,6 +18,7 @@ psp::module!("ci_tests", 1, 1);
 
 fn psp_main() {
     let tests = &[
+        alloc_test::test_main,
         bmp_screenshot_test::test_main,
         gum_test::test_main,
         math_test::test_main,
