@@ -54,7 +54,11 @@ static ALLOC: SystemAlloc = SystemAlloc;
 
 #[cfg(not(feature = "std"))]
 #[alloc_error_handler]
-fn aeh(_: Layout) -> ! {
+fn aeh(layout: Layout) -> ! {
+    // `dprintln!` doesn't touch the heap, so it still works here. The message
+    // matches std's `default_alloc_error_hook`.
+    crate::dprintln!("memory allocation of {} bytes failed", layout.size());
+
     loop {
         core::hint::spin_loop()
     }
