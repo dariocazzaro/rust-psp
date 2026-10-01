@@ -140,6 +140,17 @@ macro_rules! vfpu_asm_next {
                 ".set __psp_regnum_$30, 30",
                 ".set __psp_regnum_$31, 31",
 
+                // LLVM prints these five GPRs by name rather than by number, so
+                // an operand allocated to one of them is substituted as e.g.
+                // `$fp`. See the GPR definitions in
+                // llvm/lib/Target/Mips/MipsRegisterInfo.td. (`$zero` is reserved
+                // and never allocated; it is listed for completeness.)
+                ".set __psp_regnum_$zero, 0",
+                ".set __psp_regnum_$gp, 28",
+                ".set __psp_regnum_$sp, 29",
+                ".set __psp_regnum_$fp, 30",
+                ".set __psp_regnum_$ra, 31",
+
                 // TODO: Can VFPU instructions ever even access coproc1 registers?
                 // If not, this part can be removed.
                 //
@@ -183,7 +194,7 @@ macro_rules! vfpu_asm_next {
                 //
                 // Arguments:
                 // - register: The register name, as spit out by the rust assembler.
-                //   E.g. $1, $5, or $f0, $f13, etc..
+                //   E.g. $1, $5, $fp, or $f0, $f13, etc..
                 // - left shift: The mount to shift the register number left by
                 // - orval: The value to or the shifted register with
                 //
@@ -192,7 +203,7 @@ macro_rules! vfpu_asm_next {
                 //
                 // The registers are converted to numbers with the use of the above
                 // variables, following the `__psp_regnum_$N` pattern, where N is
-                // the register number, (0, 5, f0, f13).
+                // the register number or name, (0, 5, fp, f0, f13).
                 ".ifndef __psp_reg_or_defined",
                 ".set __psp_reg_or_defined, 1",
                 ".macro __psp_reg_or reg lshift orval",

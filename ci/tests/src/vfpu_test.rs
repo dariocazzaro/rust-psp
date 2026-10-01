@@ -77,6 +77,11 @@ pub fn test_main(test_runner: &mut TestRunner) {
             vec4(-4.0, -3.0, -2.0, -1.0),
         ),
     ]);
+    test_runner.check(
+        "vfpu_mtv_mfv_named_gpr",
+        test_mtv_mfv_named_gpr(0x1234_5678),
+        0x1234_5678,
+    );
 }
 
 fn test_add_s(value: f32) -> f32 {
@@ -225,4 +230,32 @@ fn test_shuffle_sub_rev(value: Vec4) -> Vec4 {
         zero,
         value,
     )
+}
+
+/// Regression test for #199: round-trips a value through S000 with `mtv` and
+/// `mfv` while `$2`-`$25` are clobbered. That leaves too few registers that
+/// LLVM prints by number for both operands, so at least one of them gets a
+/// register it prints by name (`$gp`, `$fp`, ...).
+fn test_mtv_mfv_named_gpr(value: u32) -> u32 {
+    let out: u32;
+    // SAFETY: the asm touches no memory and only writes `out`, the declared
+    // clobbers and S000. The compiler never allocates VFPU registers, and like
+    // the other tests here this one relies on nothing being live in S000.
+    unsafe {
+        psp::vfpu_asm!(
+            "mtv {value}, S000",
+            "mfv {out}, S000",
+            value = in(reg) value,
+            out = out(reg) out,
+            // `out` rather than `lateout`, so `value` can't use these either.
+            out("$2") _, out("$3") _, out("$4") _, out("$5") _,
+            out("$6") _, out("$7") _, out("$8") _, out("$9") _,
+            out("$10") _, out("$11") _, out("$12") _, out("$13") _,
+            out("$14") _, out("$15") _, out("$16") _, out("$17") _,
+            out("$18") _, out("$19") _, out("$20") _, out("$21") _,
+            out("$22") _, out("$23") _, out("$24") _, out("$25") _,
+            options(nostack, nomem),
+        );
+    }
+    out
 }
