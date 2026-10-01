@@ -2,8 +2,8 @@
 
 <p align="center"><img src="demo.gif" /></p>
 <p class="" align="center">
-    <a href="https://ci.mijalkovic.ca/teams/rust-psp/pipelines/rust-psp/jobs/run-tests-for-master/">
-        <img src="https://ci.mijalkovic.ca/api/v1/teams/rust-psp/pipelines/rust-psp/jobs/run-tests-for-master/badge">
+    <a href="https://github.com/overdrivenpotato/rust-psp/actions/workflows/pipeline.yml">
+        <img src="https://github.com/overdrivenpotato/rust-psp/actions/workflows/pipeline.yml/badge.svg">
     </a>
     <a href="https://crates.io/crates/psp">
         <img src="https://img.shields.io/crates/v/psp.svg?style=flat-square">
